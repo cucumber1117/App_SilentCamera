@@ -19,9 +19,24 @@
   backdrop-filter: none;
   text-align: center;
   position: relative;
-  display: flex;
-}
-
+  d  
+  .zoom-controls {
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    gap: 10px;
+  }
+  
+  .zoom-button {
+    width: 45px;
+    height: 45px;
+    font-size: 16px;
+  }
+  
+  .zoom-level {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
 .camera-title {
   position: fixed;
   top: 20px;
@@ -269,8 +284,8 @@
 /* モバイル用レスポンシブデザイン */
 @media (max-width: 768px) {
   .gallery-button {
-    bottom: 12px;
-    left: 12px;
+    bottom: 50px;
+    left: 15px;
     width: 60px;
     height: 60px;
     border-width: 2px;
@@ -347,6 +362,8 @@
   align-items: center;
   justify-content: center;
 }
+
+
 
 .capture-button:before {
   content: '';
@@ -496,10 +513,13 @@
   }
   
   .capture-button {
-    right: 25px;
+    bottom: 50px;
+    right: 50%;
+    transform: translateX(50%);
     width: 75px;
     height: 75px;
     font-size: 22px;
+    top: auto;
   }
   
   .switch-camera-button {
@@ -707,4 +727,5 @@
 
 .camera-card {
   animation: fadeIn 0.8s ease-out;
+}
 }
