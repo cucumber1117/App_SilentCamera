@@ -1,0 +1,615 @@
+/* HomePage専用のスタイル */
+.homepage-container {
+  min-height: 100vh;
+  background: #000;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.camera-card {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  background-color: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  text-align: center;
+  position: relative;
+  display: flex;
+}
+
+.camera-title {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  z-index: 30;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 8px 12px;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.video-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+
+
+/* カメラ切り替えボタン */
+.switch-camera-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 45px;
+  height: 45px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 2px solid white;
+  border-radius: 50%;
+  color: #333;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.switch-camera-button:hover {
+  background-color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  transform: scale(1.05);
+}
+
+.switch-camera-button:active {
+  transform: scale(0.95);
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.switch-camera-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ズームコントロール */
+.zoom-controls {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  z-index: 15;
+}
+
+.zoom-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.zoom-button:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.zoom-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.zoom-level {
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  min-width: 45px;
+  text-align: center;
+}
+
+/* ギャラリーボタン */
+.gallery-button {
+  position: fixed;
+  bottom: 15px;
+  left: 15px;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 3px solid white;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background-color: white;
+}
+
+.gallery-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.gallery-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.gallery-count {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: #ff6b6b;
+  color: white;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+
+
+/* モバイル用レスポンシブデザイン */
+@media (max-width: 768px) {
+  .gallery-button {
+    bottom: 12px;
+    left: 12px;
+    width: 60px;
+    height: 60px;
+    border-width: 2px;
+  }
+  
+  .gallery-count {
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+    border-width: 2px;
+  }
+}
+
+/* 横向きモバイル用 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .gallery-button {
+    bottom: 8px;
+    left: 8px;
+    width: 55px;
+    height: 55px;
+  }
+  
+  .gallery-count {
+    top: -7px;
+    right: -7px;
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
+  }
+}
+
+.controls-container {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  z-index: 20;
+}
+
+.camera-info {
+  display: none;
+}
+
+.camera-video {
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  display: block;
+}
+
+.capture-button {
+  position: fixed;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 80px;
+  height: 80px;
+  font-size: 0;
+  padding: 0;
+  background-color: white;
+  border: 4px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.capture-button:before {
+  content: '';
+  width: 60px;
+  height: 60px;
+  background-color: white;
+  border-radius: 50%;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+}
+
+.capture-button:hover {
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.capture-button:hover:before {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.capture-button:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.capture-button:active:before {
+  background-color: #f0f0f0;
+}
+
+.capture-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: translateY(-50%);
+}
+
+.download-button {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 24px;
+  background-color: #4ecdc4;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);
+  margin-top: 15px;
+}
+
+.download-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(78, 205, 196, 0.6);
+}
+
+.image-container {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: rgba(248, 249, 250, 0.8);
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.captured-image {
+  width: 100%;
+  max-width: 600px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  margin-bottom: 15px;
+}
+
+.success-title {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 20px;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+/* 保存状態のアニメーション */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.success-title:contains("保存中") {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* 横画面（ランドスケープ）レイアウト */
+@media (orientation: landscape) and (max-height: 600px) {
+  .camera-title {
+    top: 15px;
+    left: 15px;
+    font-size: 16px;
+  }
+  
+  .capture-button {
+    right: 20px;
+    width: 70px;
+    height: 70px;
+    font-size: 20px;
+  }
+  
+  .switch-camera-button {
+    top: 10px;
+    right: 10px;
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
+  }
+  
+  .zoom-controls {
+    left: 20px;
+    gap: 8px;
+  }
+  
+  .zoom-button {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+  
+  .zoom-level {
+    font-size: 10px;
+    padding: 6px 8px;
+  }
+}
+
+/* 縦画面（ポートレート）レイアウト */
+@media (max-width: 768px) and (orientation: portrait) {
+  .camera-title {
+    top: 15px;
+    left: 15px;
+    font-size: 16px;
+  }
+  
+  .capture-button {
+    right: 25px;
+    width: 75px;
+    height: 75px;
+    font-size: 22px;
+  }
+  
+  .switch-camera-button {
+    top: 15px;
+    right: 15px;
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  
+  .zoom-controls {
+    left: 25px;
+    gap: 10px;
+  }
+  
+  .zoom-button {
+    width: 45px;
+    height: 45px;
+    font-size: 15px;
+  }
+  
+  .zoom-level {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 480px) and (orientation: portrait) {
+  .camera-title {
+    top: 10px;
+    left: 10px;
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+  
+  .capture-button {
+    right: 20px;
+    width: 65px;
+    height: 65px;
+    font-size: 18px;
+  }
+  
+  .switch-camera-button {
+    top: 60px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  
+  .zoom-controls {
+    left: 20px;
+    gap: 8px;
+  }
+  
+  .zoom-button {
+    width: 40px;
+    height: 40px;
+    font-size: 13px;
+  }
+  
+  .zoom-level {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+}
+
+/* 横画面での閉じるボタン */
+@media (orientation: landscape) {
+  .close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 110;
+  }
+}
+
+/* 横画面での追加スタイル */
+.video-section {
+  flex: 1;
+}
+
+.controls-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 全画面表示のビデオ最適化 */
+@media (orientation: landscape) and (max-height: 600px) {
+  .camera-video {
+    object-fit: cover;
+  }
+  
+  .video-container {
+    border-radius: 12px;
+  }
+  
+  .switch-camera-button {
+    top: 8px;
+    right: 8px;
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
+  }
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .camera-title {
+    color: white;
+    background-color: rgba(0, 0, 0, 0.6);
+  }
+  
+  .success-title {
+    color: #e2e8f0;
+  }
+  
+  .capture-button {
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #333;
+  }
+  
+  .capture-button:hover {
+    background-color: rgba(255, 255, 255, 1);
+  }
+  
+  .switch-camera-button {
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .switch-camera-button:hover {
+    background-color: rgba(0, 0, 0, 0.9);
+  }
+  
+  .zoom-button {
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .zoom-button:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.9);
+  }
+  
+  .zoom-level {
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .image-container {
+    background-color: rgba(0, 0, 0, 0.98);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .close-button {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* アニメーション */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.image-container {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.camera-card {
+  animation: fadeIn 0.8s ease-out;
+}
