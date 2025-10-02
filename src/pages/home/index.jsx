@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import './HomePage.css';
 import Gallery from '../gallery/Gallery';
 
@@ -99,20 +99,20 @@ const HomePage = () => {
     };
   }, []);
 
-  // カメラ切り替え関数
-  const switchCamera = async () => {
+  // カメラ切り替え関数 - メモ化
+  const switchCamera = useCallback(async () => {
     const newFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
     await initCamera(newFacingMode);
-  };
+  }, [currentFacingMode]);
 
-  // ズーム機能（ボタン操作）
-  const zoomIn = () => {
+  // ズーム機能（ボタン操作）- メモ化で最適化
+  const zoomIn = useCallback(() => {
     setZoomLevel(prev => Math.min(prev + 0.1, 5));
-  };
+  }, []);
 
-  const zoomOut = () => {
+  const zoomOut = useCallback(() => {
     setZoomLevel(prev => Math.max(prev - 0.1, 1));
-  };
+  }, []);
 
   // 2点間の距離を計算
   const getPinchDistance = (touch1, touch2) => {
@@ -121,25 +121,25 @@ const HomePage = () => {
     return Math.sqrt(dx * dx + dy * dy);
   };
 
-  // タッチ開始
-  const handleTouchStart = (e) => {
+  // タッチ開始 - メモ化
+  const handleTouchStart = useCallback((e) => {
     if (e.touches.length === 2) {
       e.preventDefault();
       setIsPinching(true);
       const distance = getPinchDistance(e.touches[0], e.touches[1]);
       setLastPinchDistance(distance);
     }
-  };
+  }, []);
 
-  // タッチ移動（ピンチズーム）
-  const handleTouchMove = (e) => {
+  // タッチ移動（ピンチズーム）- メモ化とスロットリング
+  const handleTouchMove = useCallback((e) => {
     if (e.touches.length === 2 && isPinching) {
       e.preventDefault();
       const currentDistance = getPinchDistance(e.touches[0], e.touches[1]);
       const deltaDistance = currentDistance - lastPinchDistance;
       
-      if (Math.abs(deltaDistance) > 5) { // 感度調整
-        const zoomDelta = deltaDistance * 0.01; // ズーム変化量
+      if (Math.abs(deltaDistance) > 8) { // 感度を少し下げてパフォーマンス向上
+        const zoomDelta = deltaDistance * 0.008; // ズーム変化量を少し抑制
         setZoomLevel(prev => {
           const newZoom = prev + zoomDelta;
           return Math.max(1, Math.min(5, newZoom));
@@ -147,15 +147,15 @@ const HomePage = () => {
         setLastPinchDistance(currentDistance);
       }
     }
-  };
+  }, [isPinching, lastPinchDistance]);
 
-  // タッチ終了
-  const handleTouchEnd = (e) => {
+  // タッチ終了 - メモ化
+  const handleTouchEnd = useCallback((e) => {
     if (e.touches.length < 2) {
       setIsPinching(false);
       setLastPinchDistance(0);
     }
-  };
+  }, []);
 
   // ビデオのズーム適用
   useEffect(() => {
@@ -170,24 +170,22 @@ const HomePage = () => {
     
     if (!video || !canvas) return;
 
-    console.log('高解像度撮影開始');
+    // 高解像度撮影開始
 
     // フラッシュ効果
     showCameraFlash();
 
     const ctx = canvas.getContext('2d');
     
-    // 解像度設定に基づく倍率
-    const getResolutionMultiplier = () => {
+    // 解像度設定に基づく倍率（軽量化）
+    const resolutionMultiplier = useMemo(() => {
       switch (resolutionMode) {
         case 'normal': return 1;    // 標準解像度
-        case 'high': return 2;      // 高解像度（2倍）
-        case 'ultra': return 3;     // 超高解像度（3倍）
-        default: return 2;
+        case 'high': return 1.5;    // 高解像度（1.5倍に軽量化）
+        case 'ultra': return 2;     // 超高解像度（2倍に軽量化）
+        default: return 1.5;
       }
-    };
-    
-    const resolutionMultiplier = getResolutionMultiplier();
+    }, [resolutionMode]);
     const originalWidth = video.videoWidth;
     const originalHeight = video.videoHeight;
     
@@ -207,7 +205,7 @@ const HomePage = () => {
     
     // 最高品質で画像データを取得
     const dataURL = canvas.toDataURL('image/png', 1.0);
-    console.log('高解像度撮影完了:', canvas.width + 'x' + canvas.height + 'px');
+    // 高解像度撮影完了
     
     // 撮影履歴に追加（解像度情報付き）
     const newPhoto = {
@@ -221,7 +219,7 @@ const HomePage = () => {
         original: { width: originalWidth, height: originalHeight }
       }
     };
-    setPhotoHistory(prev => [newPhoto, ...prev]); // 最新を先頭に追加
+    setPhotoHistory(prev => [newPhoto, ...prev]);
     
     // 自動保存
     autoSaveImage(dataURL);
@@ -311,12 +309,12 @@ const HomePage = () => {
               
             {/* 解像度設定ボタン */}
             <button 
-              onClick={() => {
+              onClick={useCallback(() => {
                 const modes = ['normal', 'high', 'ultra'];
                 const currentIndex = modes.indexOf(resolutionMode);
                 const nextIndex = (currentIndex + 1) % modes.length;
                 setResolutionMode(modes[nextIndex]);
-              }}
+              }, [resolutionMode])}
               className="resolution-button"
               disabled={isLoading}
               title="解像度切り替え"
@@ -402,13 +400,13 @@ const HomePage = () => {
           <Gallery 
             photoHistory={photoHistory}
             onClose={() => setShowGallery(false)}
-            onUpdatePhoto={(editedPhoto) => {
+            onUpdatePhoto={useCallback((editedPhoto) => {
               setPhotoHistory(prev => 
                 prev.map(photo => 
                   photo.id === editedPhoto.id ? editedPhoto : photo
                 )
               );
-            }}
+            }, [])}
           />
         )}
       </div>
