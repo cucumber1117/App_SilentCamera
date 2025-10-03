@@ -3,6 +3,27 @@ import './HomePage.css';
 import Gallery from '../gallery/Gallery';
 import { savePhoto, getAllPhotos, deletePhoto } from '../../utils/indexedDB';
 
+// デバッグ用グローバル関数
+window.testIndexedDB = async () => {
+  console.log('IndexedDB接続テスト開始...');
+  try {
+    const testPhoto = {
+      id: Date.now(),
+      dataURL: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+      timestamp: new Date().toISOString(),
+      resolution: { width: 1, height: 1 }
+    };
+    await savePhoto(testPhoto);
+    console.log('テスト保存成功');
+    const photos = await getAllPhotos();
+    console.log('保存された写真数:', photos.length);
+    return true;
+  } catch (error) {
+    console.error('IndexedDBテスト失敗:', error);
+    return false;
+  }
+};
+
 const HomePage = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -283,8 +304,12 @@ const HomePage = () => {
 
     const ctx = canvas.getContext('2d');
     
+    // ビデオの元解像度を取得
+    const originalWidth = video.videoWidth;
+    const originalHeight = video.videoHeight;
+    
     // デバイス能力に応じた解像度設定
-    const getOptimalResolution = () => {
+    const getOptimalResolution = (videoWidth) => {
       const devicePixelRatio = window.devicePixelRatio || 1;
       const maxCanvasSize = 4096; // WebGL制限を考慮
       
@@ -304,7 +329,7 @@ const HomePage = () => {
         case 'ultra': 
           const ultraMultiplier = Math.min(3, devicePixelRatio * 2);
           return {
-            multiplier: originalWidth * ultraMultiplier <= maxCanvasSize ? ultraMultiplier : maxCanvasSize / originalWidth,
+            multiplier: videoWidth * ultraMultiplier <= maxCanvasSize ? ultraMultiplier : maxCanvasSize / videoWidth,
             quality: 1.0,
             format: 'image/png'
           };
@@ -317,10 +342,8 @@ const HomePage = () => {
       }
     };
     
-    const resolutionConfig = getOptimalResolution();
+    const resolutionConfig = getOptimalResolution(originalWidth);
     const resolutionMultiplier = resolutionConfig.multiplier;
-    const originalWidth = video.videoWidth;
-    const originalHeight = video.videoHeight;
     
     // 高解像度キャンバス設定
     canvas.width = originalWidth * resolutionMultiplier;
@@ -369,13 +392,17 @@ const HomePage = () => {
     setPhotoHistory(prev => [newPhoto, ...prev]); // 最新を先頭に追加
     
     // IndexedDBに永続保存
+    console.log('保存処理開始...');
+    setSaveStatus('saving');
     try {
+      console.log('savePhoto関数呼び出し中...', newPhoto.id);
       await savePhoto(newPhoto);
-      console.log('写真がIndexedDBに保存されました');
+      console.log('写真がIndexedDBに保存されました:', newPhoto.id);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus(null), 2000);
     } catch (error) {
       console.error('写真の永続保存に失敗:', error);
+      console.error('エラー詳細:', error.message, error.stack);
       setSaveStatus('error');
       setTimeout(() => setSaveStatus(null), 3000);
     }

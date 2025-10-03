@@ -43,11 +43,15 @@ export const openDatabase = () => {
 // 写真を保存
 export const savePhoto = async (photoData) => {
   try {
+    console.log('IndexedDB保存開始:', photoData.id);
     const db = await openDatabase();
+    console.log('データベース接続成功');
     const transaction = db.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
+    console.log('ストア取得成功');
     
     const request = store.add(photoData);
+    console.log('保存リクエスト送信');
     
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
