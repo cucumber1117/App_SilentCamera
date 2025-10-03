@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import './HomePage.css';
 import Gallery from '../gallery/Gallery';
 import { savePhoto, getAllPhotos, deletePhoto } from '../../utils/indexedDB';
+import { generateThumbnail, generateThumbnailsForPhotos } from '../../utils/thumbnail';
 
 // デバッグ用グローバル関数
 window.testIndexedDB = async () => {
@@ -150,7 +151,32 @@ const HomePage = () => {
     try {
       console.log('保存された写真を読み込み中...');
       const savedPhotos = await getAllPhotos();
-      setPhotoHistory(savedPhotos);
+      
+      // サムネイルが必要な写真があるかチェック
+      const photosNeedingThumbnails = savedPhotos.filter(photo => !photo.thumbnail);
+      
+      if (photosNeedingThumbnails.length > 0) {
+        console.log('サムネイルを生成中...', photosNeedingThumbnails.length + '件');
+        // サムネイルを生成（非同期で処理）
+        const photosWithThumbnails = await generateThumbnailsForPhotos(savedPhotos);
+        
+        // サムネイルが生成された写真を再保存
+        for (const photo of photosWithThumbnails) {
+          if (photo.thumbnail && !savedPhotos.find(p => p.id === photo.id)?.thumbnail) {
+            try {
+              await deletePhoto(photo.id);
+              await savePhoto(photo);
+            } catch (error) {
+              console.warn('サムネイル付き写真の再保存に失敗:', photo.id, error);
+            }
+          }
+        }
+        
+        setPhotoHistory(photosWithThumbnails);
+      } else {
+        setPhotoHistory(savedPhotos);
+      }
+      
       console.log('写真読み込み完了:', savedPhotos.length + '件');
     } catch (error) {
       console.error('写真読み込みエラー:', error);
@@ -375,10 +401,15 @@ const HomePage = () => {
     const dataURL = canvas.toDataURL(resolutionConfig.format, resolutionConfig.quality);
     console.log(`高品質撮影完了: ${canvas.width}x${canvas.height}px, 形式: ${resolutionConfig.format}, 品質: ${resolutionConfig.quality}`);
     
+    // サムネイル生成
+    console.log('サムネイル生成中...');
+    const thumbnail = await generateThumbnail(dataURL, 200, 200, 0.7);
+    
     // 撮影履歴に追加（解像度情報付き）
     const newPhoto = {
       id: Date.now(),
       dataURL: dataURL,
+      thumbnail: thumbnail,
       timestamp: new Date().toISOString(),
       resolution: {
         width: canvas.width,

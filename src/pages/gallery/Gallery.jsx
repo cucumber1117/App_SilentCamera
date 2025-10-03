@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import './Gallery.css';
 import PhotoEditor from './PhotoEditor';
 import { deletePhoto } from '../../utils/indexedDB';
 
 const Gallery = ({ photoHistory, onClose, onUpdatePhoto, onDeletePhoto }) => {
   const [editingPhoto, setEditingPhoto] = useState(null);
+
+  // パフォーマンス最適化のため写真リストをメモ化
+  const memoizedPhotos = useMemo(() => {
+    console.log('ギャラリー写真リスト更新:', photoHistory.length + '件');
+    return photoHistory;
+  }, [photoHistory]);
 
   const handleDownload = (photo) => {
     const link = document.createElement('a');
@@ -53,19 +59,20 @@ const Gallery = ({ photoHistory, onClose, onUpdatePhoto, onDeletePhoto }) => {
         >
           ← 戻る
         </button>
-        <h2 className="gallery-title">撮影した写真 ({photoHistory.length})</h2>
+        <h2 className="gallery-title">撮影した写真 ({memoizedPhotos.length})</h2>
       </div>
       
-      {photoHistory.length > 0 ? (
+      {memoizedPhotos.length > 0 ? (
         <div className="gallery-grid">
-          {photoHistory.map((photo) => (
+          {memoizedPhotos.map((photo) => (
             <div key={photo.id} className="gallery-item">
               <img 
-                src={photo.dataURL} 
+                src={photo.thumbnail || photo.dataURL} 
                 alt={`撮影 ${new Date(photo.timestamp).toLocaleString()}`}
                 className="gallery-image"
                 onClick={() => handlePhotoClick(photo)}
                 style={{ cursor: 'pointer' }}
+                loading="lazy"
               />
               <div className="gallery-item-info">
                 {new Date(photo.timestamp).toLocaleString('ja-JP', {
