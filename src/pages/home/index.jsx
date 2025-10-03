@@ -1,6 +1,7 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import './HomePage.css';
 import Gallery from '../gallery/Gallery';
+import { savePhoto, getAllPhotos, deletePhoto } from '../../utils/indexedDB';
 
 const HomePage = () => {
   const videoRef = useRef(null);
@@ -74,8 +75,29 @@ const HomePage = () => {
     }
   };
 
+  // 保存された写真を読み込む
+  const loadSavedPhotos = useCallback(async () => {
+    try {
+      console.log('保存された写真を読み込み中...');
+      const savedPhotos = await getAllPhotos();
+      setPhotoHistory(savedPhotos);
+      console.log('写真読み込み完了:', savedPhotos.length + '件');
+    } catch (error) {
+      console.error('写真読み込みエラー:', error);
+    }
+  }, []);
+
   useEffect(() => {
-    initCamera('environment'); // 初期は外カメラを試す
+    // 初期化処理
+    const initialize = async () => {
+      // カメラ初期化
+      initCamera('environment'); // 初期は外カメラを試す
+      
+      // 保存された写真を読み込み
+      await loadSavedPhotos();
+    };
+    
+    initialize();
 
     // 画面向きの変更を監視
     const handleOrientationChange = () => {
@@ -97,7 +119,7 @@ const HomePage = () => {
       window.removeEventListener('orientationchange', handleOrientationChange);
       window.removeEventListener('resize', handleOrientationChange);
     };
-  }, []);
+  }, [loadSavedPhotos]);
 
   // カメラ切り替え関数
   const switchCamera = async () => {
@@ -221,9 +243,23 @@ const HomePage = () => {
         original: { width: originalWidth, height: originalHeight }
       }
     };
+    
+    // メモリ上の履歴を更新
     setPhotoHistory(prev => [newPhoto, ...prev]); // 最新を先頭に追加
     
-    // 自動保存
+    // IndexedDBに永続保存
+    try {
+      await savePhoto(newPhoto);
+      console.log('写真がIndexedDBに保存されました');
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus(null), 2000);
+    } catch (error) {
+      console.error('写真の永続保存に失敗:', error);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus(null), 3000);
+    }
+    
+    // 自動保存（ダウンロード）
     autoSaveImage(dataURL);
   };
 
@@ -283,6 +319,13 @@ const HomePage = () => {
       <div className="camera-card">
         <h1 className="camera-title">
           📷 Silent Camera
+          {saveStatus && (
+            <span className={`save-status ${saveStatus}`}>
+              {saveStatus === 'saving' && '💾 保存中...'}
+              {saveStatus === 'saved' && '✅ 保存完了'}
+              {saveStatus === 'error' && '❌ 保存失敗'}
+            </span>
+          )}
         </h1>
         
         <div className="video-section">
@@ -407,6 +450,11 @@ const HomePage = () => {
                 prev.map(photo => 
                   photo.id === editedPhoto.id ? editedPhoto : photo
                 )
+              );
+            }}
+            onDeletePhoto={(photoId) => {
+              setPhotoHistory(prev => 
+                prev.filter(photo => photo.id !== photoId)
               );
             }}
           />

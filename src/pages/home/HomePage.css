@@ -36,6 +36,32 @@
   padding: 8px 12px;
   border-radius: 8px;
   backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.save-status {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.save-status.saving {
+  background-color: rgba(255, 193, 7, 0.9);
+  color: #856404;
+}
+
+.save-status.saved {
+  background-color: rgba(40, 167, 69, 0.9);
+  color: white;
+}
+
+.save-status.error {
+  background-color: rgba(220, 53, 69, 0.9);
+  color: white;
 }
 
 /* ビデオ表示 */

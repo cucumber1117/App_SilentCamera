@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import './Gallery.css';
 import PhotoEditor from './PhotoEditor';
+import { deletePhoto } from '../../utils/indexedDB';
 
-const Gallery = ({ photoHistory, onClose, onUpdatePhoto }) => {
+const Gallery = ({ photoHistory, onClose, onUpdatePhoto, onDeletePhoto }) => {
   const [editingPhoto, setEditingPhoto] = useState(null);
 
   const handleDownload = (photo) => {
@@ -12,6 +13,21 @@ const Gallery = ({ photoHistory, onClose, onUpdatePhoto }) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleDelete = async (photo) => {
+    if (window.confirm('この写真を削除しますか？')) {
+      try {
+        // IndexedDBから削除
+        await deletePhoto(photo.id);
+        // 親コンポーネントに削除を通知
+        onDeletePhoto(photo.id);
+        console.log('写真が削除されました:', photo.id);
+      } catch (error) {
+        console.error('写真削除エラー:', error);
+        alert('写真の削除に失敗しました');
+      }
+    }
   };
 
   const handlePhotoClick = (photo) => {
@@ -59,13 +75,25 @@ const Gallery = ({ photoHistory, onClose, onUpdatePhoto }) => {
                   minute: '2-digit'
                 })}
               </div>
-              <button 
-                onClick={() => handleDownload(photo)}
-                className="gallery-download-button"
-                title="ダウンロード"
-              >
-                💾
-              </button>
+              <div className="gallery-item-buttons">
+                <button 
+                  onClick={() => handleDownload(photo)}
+                  className="gallery-download-button"
+                  title="ダウンロード"
+                >
+                  💾
+                </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(photo);
+                  }}
+                  className="gallery-delete-button"
+                  title="削除"
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
           ))}
         </div>
