@@ -39,26 +39,75 @@ const HomePage = () => {
       // 新しいストリームを取得
       let mediaStream;
       try {
+        // 高品質カメラ設定
+        const videoConstraints = {
+          facingMode: facingMode,
+          width: { 
+            min: 1280,
+            ideal: 3840, // 4K解像度
+            max: 4096 
+          },
+          height: { 
+            min: 720,
+            ideal: 2160, // 4K解像度
+            max: 3072 
+          },
+          frameRate: { 
+            min: 24,
+            ideal: 60,
+            max: 60 
+          },
+          // 追加の品質設定
+          aspectRatio: { ideal: 16/9 },
+          focusMode: 'continuous',
+          exposureMode: 'continuous',
+          whiteBalanceMode: 'continuous'
+        };
+
         mediaStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: facingMode,
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          }
+          video: videoConstraints,
+          audio: false // 無音カメラなのでaudioは無効
         });
         setCurrentFacingMode(facingMode);
+        
+        console.log('高品質カメラが初期化されました');
+        console.log('ビデオトラック設定:', mediaStream.getVideoTracks()[0].getSettings());
       } catch (err) {
-        // 指定したカメラが使えない場合は逆のカメラを試す
-        const fallbackMode = facingMode === 'environment' ? 'user' : 'environment';
-        console.warn(`${facingMode}カメラが使えません、${fallbackMode}を試します:`, err);
-        mediaStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: fallbackMode,
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          }
-        });
-        setCurrentFacingMode(fallbackMode);
+        // 高品質設定で失敗した場合のフォールバック
+        console.warn('高品質カメラ設定に失敗、フォールバック設定を試します:', err);
+        
+        try {
+          // 中品質設定でリトライ
+          const fallbackConstraints = {
+            facingMode: facingMode,
+            width: { min: 1280, ideal: 1920, max: 2560 },
+            height: { min: 720, ideal: 1080, max: 1440 },
+            frameRate: { min: 24, ideal: 30, max: 60 }
+          };
+          
+          mediaStream = await navigator.mediaDevices.getUserMedia({ 
+            video: fallbackConstraints,
+            audio: false
+          });
+          setCurrentFacingMode(facingMode);
+          console.log('中品質カメラで初期化されました');
+          
+        } catch (fallbackErr) {
+          // それでも失敗した場合は別カメラを試す
+          const alternateFacingMode = facingMode === 'environment' ? 'user' : 'environment';
+          console.warn(`${facingMode}カメラが使えません、${alternateFacingMode}を試します:`, fallbackErr);
+          
+          mediaStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+              facingMode: alternateFacingMode,
+              width: { min: 640, ideal: 1920, max: 3840 },
+              height: { min: 480, ideal: 1080, max: 2160 },
+              frameRate: { ideal: 30 }
+            },
+            audio: false
+          });
+          setCurrentFacingMode(alternateFacingMode);
+        }
       }
       
       setStream(mediaStream);
@@ -120,6 +169,41 @@ const HomePage = () => {
       window.removeEventListener('resize', handleOrientationChange);
     };
   }, [loadSavedPhotos]);
+
+  // 画質向上関数
+  const enhanceImageQuality = useCallback((imageData, ctx) => {
+    const data = imageData.data;
+    const width = imageData.width;
+    const height = imageData.height;
+    
+    // 軽微なシャープネス向上（アンシャープマスク効果）
+    const sharpnessStrength = 0.1; // 控えめな強度
+    
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        for (let c = 0; c < 3; c++) { // RGB各チャンネル
+          const idx = (y * width + x) * 4 + c;
+          
+          // 周囲のピクセルとの差分を計算
+          const center = data[idx];
+          const top = data[((y-1) * width + x) * 4 + c];
+          const bottom = data[((y+1) * width + x) * 4 + c];
+          const left = data[(y * width + (x-1)) * 4 + c];
+          const right = data[(y * width + (x+1)) * 4 + c];
+          
+          // ラプラシアンフィルタ適用
+          const laplacian = (4 * center - top - bottom - left - right);
+          const enhanced = center + (laplacian * sharpnessStrength);
+          
+          // 値の範囲制限
+          data[idx] = Math.max(0, Math.min(255, enhanced));
+        }
+      }
+    }
+    
+    // 処理済みデータを戻す
+    ctx.putImageData(imageData, 0, 0);
+  }, []);
 
   // カメラ切り替え関数
   const switchCamera = async () => {
@@ -199,17 +283,42 @@ const HomePage = () => {
 
     const ctx = canvas.getContext('2d');
     
-    // 解像度設定に基づく倍率
-    const getResolutionMultiplier = () => {
+    // デバイス能力に応じた解像度設定
+    const getOptimalResolution = () => {
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const maxCanvasSize = 4096; // WebGL制限を考慮
+      
       switch (resolutionMode) {
-        case 'normal': return 1;    // 標準解像度
-        case 'high': return 2;      // 高解像度（2倍）
-        case 'ultra': return 3;     // 超高解像度（3倍）
-        default: return 2;
+        case 'normal': 
+          return {
+            multiplier: Math.max(1, devicePixelRatio * 0.75),
+            quality: 0.92,
+            format: 'image/jpeg'
+          };
+        case 'high': 
+          return {
+            multiplier: Math.max(1.5, devicePixelRatio * 1.2),
+            quality: 0.98,
+            format: 'image/png'
+          };
+        case 'ultra': 
+          const ultraMultiplier = Math.min(3, devicePixelRatio * 2);
+          return {
+            multiplier: originalWidth * ultraMultiplier <= maxCanvasSize ? ultraMultiplier : maxCanvasSize / originalWidth,
+            quality: 1.0,
+            format: 'image/png'
+          };
+        default: 
+          return {
+            multiplier: Math.max(1.5, devicePixelRatio),
+            quality: 0.95,
+            format: 'image/png'
+          };
       }
     };
     
-    const resolutionMultiplier = getResolutionMultiplier();
+    const resolutionConfig = getOptimalResolution();
+    const resolutionMultiplier = resolutionConfig.multiplier;
     const originalWidth = video.videoWidth;
     const originalHeight = video.videoHeight;
     
@@ -217,19 +326,31 @@ const HomePage = () => {
     canvas.width = originalWidth * resolutionMultiplier;
     canvas.height = originalHeight * resolutionMultiplier;
     
-    // 高品質レンダリング設定
+    // 最高品質レンダリング設定
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     
-    // 解像度スケール適用
+    // アンチエイリアス設定
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1.0;
+    
+    // 高品質変換行列を適用
+    ctx.save();
     ctx.scale(resolutionMultiplier, resolutionMultiplier);
     
-    // 高解像度で描画
+    // 最高品質で描画（バイリニア補間有効）
     ctx.drawImage(video, 0, 0, originalWidth, originalHeight);
+    ctx.restore();
     
-    // 最高品質で画像データを取得
-    const dataURL = canvas.toDataURL('image/png', 1.0);
-    console.log('高解像度撮影完了:', canvas.width + 'x' + canvas.height + 'px');
+    // 画像品質向上のための後処理
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    
+    // シャープネス強化（軽微）
+    enhanceImageQuality(imageData, ctx);
+    
+    // 最適化された設定で出力
+    const dataURL = canvas.toDataURL(resolutionConfig.format, resolutionConfig.quality);
+    console.log(`高品質撮影完了: ${canvas.width}x${canvas.height}px, 形式: ${resolutionConfig.format}, 品質: ${resolutionConfig.quality}`);
     
     // 撮影履歴に追加（解像度情報付き）
     const newPhoto = {

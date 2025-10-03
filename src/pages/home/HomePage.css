@@ -82,6 +82,16 @@
   height: 100vh;
   object-fit: cover;
   display: block;
+  /* 高品質ビデオ表示設定 */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: optimizeQuality;
+  backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
+  /* アンチエイリアス強化 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* ハードウェアアクセラレーション */
+  will-change: transform;
 }
 
 /* カメラ切り替えボタン */
