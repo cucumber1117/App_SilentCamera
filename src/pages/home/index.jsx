@@ -3,6 +3,7 @@ import './HomePage.css';
 import Gallery from '../gallery/Gallery';
 import { savePhoto, getAllPhotos, deletePhoto } from '../../utils/indexedDB';
 import { generateThumbnail, generateThumbnailsForPhotos } from '../../utils/thumbnail';
+import { savePhotoOptimally, detectDevice, checkSaveCapabilities } from '../../utils/mobilePhotoSave';
 
 // デバッグ用グローバル関数
 window.testIndexedDB = async () => {
@@ -44,6 +45,10 @@ const HomePage = () => {
   
   // 解像度設定
   const [resolutionMode, setResolutionMode] = useState('high'); // 'normal', 'high', 'ultra'
+  
+  // モバイル機能管理
+  const [deviceInfo, setDeviceInfo] = useState(null);
+  const [saveCapabilities, setSaveCapabilities] = useState(null);
 
 
 
@@ -186,6 +191,14 @@ const HomePage = () => {
   useEffect(() => {
     // 初期化処理
     const initialize = async () => {
+      // デバイス情報を取得
+      const device = detectDevice();
+      const capabilities = checkSaveCapabilities();
+      setDeviceInfo(device);
+      setSaveCapabilities(capabilities);
+      console.log('デバイス情報:', device);
+      console.log('保存機能:', capabilities);
+      
       // カメラ初期化
       initCamera('environment'); // 初期は外カメラを試す
       
@@ -469,21 +482,30 @@ const HomePage = () => {
   };
 
   const autoSaveImage = async (dataURL) => {
+    if (!deviceInfo) return; // デバイス情報がない場合はスキップ
+    
     setSaveStatus('saving');
     try {
-      // 少し待ってから保存（UX向上のため）
-      setTimeout(() => {
-        const link = document.createElement('a');
-        link.href = dataURL;
-        link.download = `silent_photo_${new Date().getTime()}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
+      // 最適な保存方法で保存
+      const result = await savePhotoOptimally(dataURL);
+      
+      if (result.success) {
         setSaveStatus('saved');
-        // 3秒後に保存状態をリセット
-        setTimeout(() => setSaveStatus(null), 3000);
-      }, 500);
+        console.log('写真保存成功:', result.method, result.message);
+        
+        // 保存方法に応じてメッセージをカスタマイズ
+        if (result.method === 'webshare') {
+          console.log('📱 写真アプリに保存されました');
+        } else {
+          console.log('💾 ダウンロードフォルダに保存されました');
+        }
+      } else {
+        setSaveStatus('error');
+        console.error('写真保存失敗:', result.message);
+      }
+      
+      // 3秒後に保存状態をリセット
+      setTimeout(() => setSaveStatus(null), 3000);
     } catch (err) {
       console.error('自動保存に失敗しました:', err);
       setSaveStatus('error');
@@ -498,10 +520,16 @@ const HomePage = () => {
       <div className="camera-card">
         <h1 className="camera-title">
           📷 Silent Camera
-          {saveStatus && (
+          {saveStatus && deviceInfo && (
             <span className={`save-status ${saveStatus}`}>
-              {saveStatus === 'saving' && '💾 保存中...'}
-              {saveStatus === 'saved' && '✅ 保存完了'}
+              {saveStatus === 'saving' && (
+                deviceInfo.isMobile && saveCapabilities?.nativePhotoSave ? 
+                '� 写真アプリに保存中...' : '💾 ダウンロード中...'
+              )}
+              {saveStatus === 'saved' && (
+                deviceInfo.isMobile && saveCapabilities?.nativePhotoSave ? 
+                '✅ 写真アプリに保存' : '✅ ダウンロード完了'
+              )}
               {saveStatus === 'error' && '❌ 保存失敗'}
             </span>
           )}

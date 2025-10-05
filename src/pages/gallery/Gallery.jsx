@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import './Gallery.css';
 import PhotoEditor from './PhotoEditor';
 import { deletePhoto } from '../../utils/indexedDB';
+import { savePhotoOptimally } from '../../utils/mobilePhotoSave';
 
 const Gallery = ({ photoHistory, onClose, onUpdatePhoto, onDeletePhoto }) => {
   const [editingPhoto, setEditingPhoto] = useState(null);
@@ -12,13 +13,35 @@ const Gallery = ({ photoHistory, onClose, onUpdatePhoto, onDeletePhoto }) => {
     return photoHistory;
   }, [photoHistory]);
 
-  const handleDownload = (photo) => {
-    const link = document.createElement('a');
-    link.href = photo.dataURL;
-    link.download = `silent_photo_${photo.id}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (photo) => {
+    try {
+      const filename = `silent_photo_${photo.id}.png`;
+      const result = await savePhotoOptimally(photo.dataURL, filename);
+      
+      if (result.success) {
+        console.log('ギャラリーから保存成功:', result.method, result.message);
+        
+        // 成功時の視覚的フィードバック（オプション）
+        if (result.method === 'webshare') {
+          alert('📱 写真アプリに保存されました');
+        } else {
+          alert('💾 ダウンロードフォルダに保存されました');
+        }
+      } else {
+        console.error('ギャラリーから保存失敗:', result.message);
+        alert('保存に失敗しました: ' + result.message);
+      }
+    } catch (error) {
+      console.error('保存処理エラー:', error);
+      
+      // フォールバック：従来のダウンロード方式
+      const link = document.createElement('a');
+      link.href = photo.dataURL;
+      link.download = `silent_photo_${photo.id}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const handleDelete = async (photo) => {
